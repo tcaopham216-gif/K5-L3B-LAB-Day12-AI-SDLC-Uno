@@ -30,10 +30,12 @@ class QuanSim:
     mode = "quan"
     phase = "quan"
 
-    def __init__(self, tuning, scenario, streams, ids, inventory=None):
+    def __init__(self, tuning, scenario, streams, ids, inventory=None,
+                 allowed_dishes=None, money=0, earned=0, reputation=None):
         t = tuning["quan"]
         self.t = t
         self.menu = tuning["menu"]
+        self.allowed_dishes = set(allowed_dishes) if allowed_dishes is not None else set(self.menu.keys())
         self.rng = streams
         self.ids = ids
         p = scenario.get("player", {})
@@ -48,7 +50,7 @@ class QuanSim:
         self.stock = {k: int(v) for k, v in raw_stock.items() if v > 0}
         self.hand = dict(scenario["hand"]) if scenario.get("hand") is not None else None
         self.time_left_ticks = scenario.get("time_left_ticks", int(round(t["duration_s"] * 60)))
-        self.reputation = float(scenario.get("reputation", t["reputation_initial"]))
+        self.reputation = float(reputation if reputation is not None else scenario.get("reputation", t["reputation_initial"]))
 
         self.stoves = []
         for s in self._merge(t["stoves"], scenario.get("stoves", [])):
@@ -88,18 +90,24 @@ class QuanSim:
             ids.reserve(c["id"])
 
         self._validate_initial_state()
-        self.money = 0
-        self.earned = 0
+        self.money = int(money)
+        self.earned = int(earned)
         self.shift_earned = 0
         self.done = False
         self.reason = None
 
     def _validate_initial_state(self):
-        """Kiểm mâu thuẫn chéo giữa bếp, tay, khách và kho trước khi chạy/ghi output."""
+        """Kiểm mâu thuẫn chéo giữa bếp, tay, khách, kế hoạch và kho trước khi chạy/ghi output."""
         by_id = {c["id"]: c for c in self.customers}
         assigned_dishes = {}
 
+        for c in self.customers:
+            if c["dish_id"] not in self.allowed_dishes:
+                raise BadInput(f"customers.{c['id']}: món {c['dish_id']} không thuộc kế hoạch ngày")
+
         def register_dish(source, dish):
+            if dish["dish_id"] not in self.allowed_dishes:
+                raise BadInput(f"{source}: món {dish['dish_id']} không thuộc kế hoạch ngày")
             oid = dish["order_id"]
             if oid not in by_id:
                 raise BadInput(f"{source}: món tham chiếu đơn không tồn tại ({oid})")
@@ -418,7 +426,7 @@ class QuanSim:
             for k, qty in c["reserved"].items():
                 avail[k] = avail.get(k, 0) - qty
         cookable = [
-            d for d in sorted(self.menu)
+            d for d in sorted(self.allowed_dishes)
             if all(avail.get(k, 0) >= qty for k, qty in self.menu[d]["recipe"].items())
         ]
         if not cookable:
