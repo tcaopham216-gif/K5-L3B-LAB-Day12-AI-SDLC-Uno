@@ -1,21 +1,18 @@
 # TEAM
 
-**Tên nhóm:** …  **Số người:** …  (khớp `team_size` trong `game.contract.json`)
+**Tên nhóm:** Uno  **Số người:** 1 (khớp `team_size` trong `game.contract.json` — thực hiện solo toàn bộ 4 lát)
 
 | Thành viên | GitHub handle | Module chính | Vai quy trình | Người dự phòng cho |
 |---|---|---|---|---|
-| | | `sim/gather` | | |
-| | | `sim/quan` | | |
-| | | `client/ui` | | |
-| | | `qa` | | |
+| Cao Phạm Thành Đạt | tcaopham216-gif | `sim/gather`, `sim/quan`, `client/ui`, `qa` | PO / Integrator / QA lead / Scrum | — (solo) |
 
-**Vai quy trình:** PO (đầu mối hỏi giảng viên, giữ `docs/clarify.md`) · Integrator (giữ `docs/contracts/`, gắn tag) · QA lead · Scrum/Release. Có thể kiêm.
+**Vai quy trình:** PO (đầu mối hỏi giảng viên, giữ `docs/clarify.md`) · Integrator (giữ `docs/contracts/`, gắn tag) · QA lead · Scrum/Release. Kiêm toàn bộ do nhóm chỉ có 1 thành viên.
 
-## Thỏa thuận làm việc nhóm (điền trong 15 phút kickoff, ≤ 10 dòng)
+## Thỏa thuận làm việc nhóm (kickoff, ≤ 10 dòng)
 
-- Kênh liên lạc: …
-- Khi bất đồng về thiết kế: … (ví dụ: nói 2 phút, không xong thì Integrator quyết và ghi lại lý do)
-- Khi ai đó trễ hoặc vướng quá 10 phút: … (ví dụ: nói ngay trong kênh, người dự phòng nhận việc)
-- Giờ standup giữa phase: …
-- Cách đọc code của nhau (tùy chọn): … (ví dụ: mỗi người đọc lát kế bên; PR hoặc xem trực tiếp)
-- Cách làm việc với Git: … (ví dụ: push thẳng nhánh chính / nhánh ngắn rồi gộp; thống nhất ai gắn tag)
+- Kênh liên lạc & ghi chép: làm solo, lưu mọi giả định/quyết định thiết kế trong [`docs/clarify.md`](docs/clarify.md).
+- Khi gặp chỗ mơ hồ / bất đồng với đặc tả: kiểm tra Test Contract v1.0 trước, không đoán bừa; ghi rõ quyết định và người chốt (PO) vào `docs/clarify.md`.
+- Khi vướng quá 10 phút: chuyển sang kiểm tra nhỏ hơn hoặc viết test tái hiện lỗi trước khi sửa luật.
+- Mốc kiểm tra giữa phase: rà lại tiến độ 4 lát ở phút 20 và phút 45 trong [`docs/standup.md`](docs/standup.md).
+- Cách đọc & review code: tự review từng lát đối chiếu với [`AGENTS.md`](AGENTS.md) và Test Contract v1.0 trước khi commit.
+- Cách làm việc với Git: phát triển tuần tự từng lát với commit riêng có nội dung trên `main`; chạy đầy đủ `unittest` trước mỗi commit và gắn tag `phase-1` tại commit bàn giao.
