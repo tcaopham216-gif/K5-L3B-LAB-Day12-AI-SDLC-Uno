@@ -1,0 +1,7 @@
+$ git clone -b main repo.bundle clean_clone_p4 -> exit=0
+$ (clean_clone) python -m chonoi.headless --mode gather --seed 1 --ticks 60 -> exit=0
+$ (clean_clone) python -m chonoi.soak --seed 7 --days 2 -> exit=0 days_completed=2 crashes=0
+$ (clean_clone) LiveServer --mode day GET / & /state -> {"root_status": 200, "state_status": 200, "mode": "day", "phase": "gather", "day": 1}
+$ unzip dist/quan-an-cho-noi-v1.0.0.zip -> required_files_ok=8/8
+$ (release_zip) python -m chonoi.headless --mode gather --seed 1 --ticks 60 -> exit=0
+$ (release_zip) LiveServer --mode day GET / & /state -> {"root_status": 200, "state_status": 200, "mode": "day", "phase": "gather", "day": 1}

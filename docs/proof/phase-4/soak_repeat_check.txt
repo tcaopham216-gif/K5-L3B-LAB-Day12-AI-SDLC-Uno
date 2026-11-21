@@ -1,0 +1,15 @@
+$ python3 -m chonoi.soak --seed 7 --days 10 --out docs/proof/phase-4/soak.json
+run1: exit=0 days=10 days_completed=10 crashes=0 duration_s=52.783
+run2: exit=0 days=10 days_completed=10 crashes=0 duration_s=46.841
+gameplay_fields_match(days, days_completed, crashes, results): True
+results:
+  day=1 earned=215 reputation=4.2 score=615
+  day=2 earned=568 reputation=5.0 score=1068
+  day=3 earned=879 reputation=5.0 score=1379
+  day=4 earned=1194 reputation=5.0 score=1694
+  day=5 earned=1555 reputation=5.0 score=2055
+  day=6 earned=1764 reputation=5.0 score=2264
+  day=7 earned=2140 reputation=5.0 score=2640
+  day=8 earned=2430 reputation=5.0 score=2930
+  day=9 earned=2499 reputation=5.0 score=2999
+  day=10 earned=2688 reputation=5.0 score=3188

@@ -1,0 +1,9 @@
+# Kế hoạch Phase 3 (TICKET-03 — Change Request “Mùa Nước Nổi”, Contract v1.2)
+
+- **Mục tiêu:** Chuyển toàn bộ chuỗi bàn giao kho, giữ chỗ đơn, tính giá món và HUD sang mô hình **cá thể có độ tươi** theo đúng Test Contract v1.2 cho nhóm solo **Uno** (`team_size: 1`, `"extensions": []` — chỉ làm Lõi, không bật Mở rộng `current`/`reservations`).
+- **Danh sách AC & lát công việc (`tcaopham216-gif`):**
+  1. **Kiến trúc & Adapter (`AC-P3-01`, `AC-P3-02`):** Viết `ADR-0001`, cập nhật `game.contract.json` (`contract_version: "1.2"`, `freshness`), `contract.py`, `inventory.py` (`Fraction` + lưới `1/240`, từ chối kho đếm cũ với mã `2`) và `scenario.py` (`hold`/`stock` cá thể, `reserved` mảng ID).
+  2. **Lặn & Hái (`AC-P3-03`, `AC-P3-04`):** Cập nhật `GatherSim`: cấp `I1, I2,...` liên tục, hao `0.5/s` từ bước kế, `spoiled` một lần ở `< 30` theo ID, giữ LIFO với item object khi rơi hàng / `faint`, dừng hao khi `pause`.
+  3. **Quán & Giá theo tươi (`AC-P3-05`, `AC-P3-06`, `AC-P3-07`):** Cập nhật `QuanSim`: hao `0.25/s` mọi hàng trong kho, phát hết `spoiled` trước khi xử lý giữ chỗ bị ươn (nhả toàn bộ đơn và giữ lại một lần theo `(order_tick, id bàn)`, chuyển `unfulfillable` nếu thiếu), chốt `base_price = floor(price * avg_fresh / 100)` lúc `cook_started`, tính boa trên giá chốt.
+  4. **Vòng ngày & HUD (`AC-P3-08`, `AC-P3-09`):** Cập nhật `DaySim` (giữ chuỗi ID `I*` xuyên Ngày, đổi ID mẫu `hold` từ Ngày 2, không hao thêm khi bàn giao `gather → quan`, không hao ở Shop) và `chonoi/live.py` + `chonoi/web/index.html` (thanh/nhãn độ tươi & cảnh báo hàng ươn).
+  5. **Hồi quy, Kiểm chứng & Tài liệu (`AC-P3-10`):** Cập nhật fixture P1–P2 cho schema v1.2, viết `tests/test_phase3_rules.py`, sinh bằng chứng `docs/proof/phase-3/`, hoàn thiện `CHANGELOG.md`, `docs/verification/phase-3.md` và gắn tag `phase-3`.

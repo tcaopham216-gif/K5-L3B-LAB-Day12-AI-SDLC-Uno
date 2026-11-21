@@ -1,4 +1,4 @@
-"""Điểm vào headless: python3 -m chonoi.headless --mode gather --seed 1 --ticks 600 --out out.jsonl
+"""Điểm vào headless (Test Contract v1.1): gather | quan | day.
 
 Mã thoát: 0 bình thường; 2 tham số/đầu vào sai (kiểm TRƯỚC khi ghi đầu ra); 1 lỗi chạy/ghi.
 """
@@ -33,7 +33,7 @@ def _int(name):
 
 def main(argv=None) -> int:
     p = _Parser(prog="chonoi.headless")
-    p.add_argument("--mode", required=True, choices=["gather", "quan", "day"])  # `day` có từ v1.1
+    p.add_argument("--mode", required=True, choices=["gather", "quan", "day"])
     p.add_argument("--seed", required=True, type=_int("seed"))
     p.add_argument("--ticks", required=True, type=_int("ticks"))
     p.add_argument("--out", required=True)
@@ -41,11 +41,15 @@ def main(argv=None) -> int:
     p.add_argument("--inputs")
     p.add_argument("--inventory")
     p.add_argument("--inventory-out", dest="inventory_out")
+    p.add_argument("--days", type=_int("days"), default=None)
     p.add_argument("--snapshot-every", dest="snapshot_every", type=_int("snapshot-every"), default=10)
     a = p.parse_args(argv)
     try:
-        if a.mode == "day":
-            raise BadInput("--mode day chưa hỗ trợ ở contract v1.0 (có từ v1.1)")
+        if a.days is not None and a.mode != "day":
+            raise BadInput("--days chỉ dùng với --mode day")
+        days = 1 if a.days is None else a.days
+        if a.mode == "day" and not (1 <= days <= 5):
+            raise BadInput("--days phải là số nguyên trong [1, 5]")
         if a.ticks < 0:
             raise BadInput("--ticks phải >= 0")
         if a.snapshot_every <= 0:
@@ -64,15 +68,15 @@ def main(argv=None) -> int:
         scenario = load_scenario(a.scenario, a.mode, tuning)
         frames = load_frames(a.inputs)
         inventory = read_inventory(a.inventory) if a.inventory else None
-        if inventory is not None and "stock" in scenario:
+        if inventory is not None and a.mode == "quan" and "stock" in scenario:
             raise BadInput("vừa có quan.stock vừa có --inventory")
     except BadInput as e:
         sys.stderr.write(f"đầu vào sai: {e}\n")
         return 2
     try:
         run(a.mode, tuning, scenario, a.seed, frames, a.ticks, a.out, a.snapshot_every,
-            inventory=inventory, inventory_out=a.inventory_out)
-    except BadInput as e:  # lỗi mức luật phát hiện lúc dựng sim
+            inventory=inventory, inventory_out=a.inventory_out, days=days)
+    except BadInput as e:
         sys.stderr.write(f"đầu vào sai: {e}\n")
         return 2
     except OSError as e:

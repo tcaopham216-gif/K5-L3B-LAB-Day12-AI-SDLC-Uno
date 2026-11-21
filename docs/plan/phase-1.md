@@ -1,5 +1,12 @@
-# Kế hoạch Phase 1 (≤ 1 trang)
+# Kế hoạch Phase 1 (PRD-0 — Test Contract v1.0)
 
-- Mục tiêu:
-- Việc / người / phụ thuộc (link issue):
-- Rủi ro:
+- **Mục tiêu:** Hoàn thiện đủ lõi 2 buổi `gather` và `quan` trên starter Python, nối nhau qua file kho nguyên tử `{"items": ...}`, qua sạch toàn bộ smoke test hộp đen + unit test + test luật Phase 1, kèm HUD chơi thử rõ ràng và tài liệu kiểm chứng đầy đủ cho nhóm **Uno** (solo).
+- **Việc / người / phụ thuộc (tất cả do `tcaopham216-gif` thực hiện tuần tự):**
+  1. **Kickoff (0–15'):** Cập nhật `game.contract.json`, `TEAM.md`, chốt hợp đồng tích hợp (`docs/contracts/README.md`) và kế hoạch `phase-1.md`. *(AC-P1-01, AC-P1-02)*
+  2. **Lát 1 & 2 (`chonoi/sim/gather.py`):** Hoàn thiện `dive`/`surface`, oxy mặt nước/dưới nước, đếm ngạt `choke` → `faint` (LIFO `lost`, kho rỗng), hái nút + mọc lại + `hold_full`, bắt cá + hồi chiêu + tie-break `(dist, id_key)`, kết thúc `docked`/`fainted`/`time`. Phụ thuộc: `ramp.py`, `ids.py`, `inventory.py`. *(AC-P1-03 .. AC-P1-06)*
+  3. **Lát 3 & 4 (`chonoi/scenario.py`, `chonoi/sim/quan.py`, `chonoi/web/index.html`):** Kiểm mâu thuẫn scenario mức luật (mã thoát `2` trước khi ghi output); vòng đời khách `waiting`/`eating`, giữ chỗ nguyên liệu theo đơn, lịch khách theo `phase_tick` & RNG `Streams("quan_customer")`; `interact` duy nhất theo `(dist, bếp trước bàn, id_key)`, bếp `idle` → `cooking` → `ready` → `hand` → `served` → `paid`/`customer_left`/`quan_end`, tính boa bằng `Decimal` chính xác; sửa HUD `chonoi/web/index.html` hiển thị đúng tên món trên bếp, món trên tay và kho khả dụng. Phụ thuộc: hợp đồng kho v1.0. *(AC-P1-07 .. AC-P1-11)*
+  4. **Kiểm chứng & tài liệu (`tests/test_phase1_rules.py`, `.agents/skills/`, `AGENTS.md`, `docs/*`, `README.md`):** Bổ sung test hộp đen đầy đủ biên & mã thoát `2`, ghi bằng chứng chạy thật vào `docs/proof/phase-1/`, cập nhật ma trận truy vết `docs/verification/phase-1.md`, `clarify.md`, `standup.md`, `ai-usage-log.md`, `docs/members/tcaopham216-gif.md`. *(AC-P1-12)*
+- **Rủi ro & giảm thiểu:**
+  - *Sai lệch thứ tự event trong cùng 1 tick hoặc sai biên `<=` / `<` (ví dụ `t+59`, boa ở `1800` vs `1799`, cuối ca):* đối chiếu từng dòng mục F Test Contract v1.0 và khóa bằng test biên riêng.
+  - *Mất tính tất định hoặc sai số float khi tính tỷ lệ boa:* mọi ngẫu nhiên đi qua `Streams`, tính tỷ lệ kiên nhẫn bằng `Decimal`, chỉ làm tròn ở bước xuất JSONL.
+  - *Chênh lệch `python3` trên Windows vs Linux CI:* giữ nguyên `python3` trong `game.contract.json` cho CI và test local qua shim `python3.exe` ngoài repo.
