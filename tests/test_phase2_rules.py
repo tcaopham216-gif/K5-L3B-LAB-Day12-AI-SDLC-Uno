@@ -28,7 +28,7 @@ def item(iid, kind, fresh=100):
 class Phase2TuningAndSetupTests(unittest.TestCase):
     def test_v11_manifest_standard_values_and_gather_setup(self):
         c = load_contract()
-        self.assertIn(c["contract_version"], ("1.1", "1.2"))
+        self.assertIn(c["contract_version"], ("1.1", "1.2", "1.3"))
         t = c["tuning"]
         g, q, m = t["gather"], t["quan"], t["menu"]
         self.assertEqual(len(g["nodes"]), 6)

@@ -492,7 +492,7 @@ def run_benchmark(seed: int, duration_s: float, out_path: str, warmup_s: float =
         renderer.close()
 
     frames = len(dts)
-    measured_s = max(1e-6, prev - meas_start)
+    measured_s = round(max(1e-6, prev - meas_start), 4)
     avg_fps = frames / measured_s
     k = max(1, math.ceil(0.01 * frames))
     slowest = sorted(dts, reverse=True)[:k]
@@ -502,7 +502,7 @@ def run_benchmark(seed: int, duration_s: float, out_path: str, warmup_s: float =
         "avg_fps": round(avg_fps, 4),
         "p1_low_fps": round(p1_low_fps, 4),
         "frames": frames,
-        "measured_s": round(measured_s, 4),
+        "measured_s": measured_s,
         "load_ms": round(load_ms, 3),
     }
     _atomic_write_json(out_path, result)

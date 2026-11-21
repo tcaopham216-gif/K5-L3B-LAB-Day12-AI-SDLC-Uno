@@ -18,7 +18,7 @@ def it(iid, kind, fresh=100):
 class Phase3SchemaAndExit2Tests(unittest.TestCase):
     def test_v12_manifest_freshness_and_reject_old_or_bad_inventory_exit_2(self):
         c = load_contract()
-        self.assertEqual(c["contract_version"], "1.2")
+        self.assertIn(c["contract_version"], ("1.2", "1.3"))
         self.assertEqual(c["tuning"]["freshness"], {
             "initial": 100,
             "gather_decay_per_s": 0.5,
