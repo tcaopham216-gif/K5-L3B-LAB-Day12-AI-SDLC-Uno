@@ -386,40 +386,44 @@ class GatherSim:
             vd = math.sin(rad)
             x, d = float(f["pos"][0]), float(f["pos"][1])
             # Nếu fixture đặt cá ngoài dải bơi của loài, giữ nguyên khi không vượt biên ngoài hay kẹp mềm khi chạm
+            bounced = False
             if x < x_lo:
                 x = x_lo
                 if vx < 0:
                     vx = -vx
+                    bounced = True
             elif x > x_hi:
                 x = x_hi
                 if vx > 0:
                     vx = -vx
+                    bounced = True
             if d < d_lo:
                 d = d_lo
                 if vd < 0:
                     vd = -vd
+                    bounced = True
             elif d > d_hi:
                 d = d_hi
                 if vd > 0:
                     vd = -vd
+                    bounced = True
 
             rem = 1.0
-            bounced = False
             for _ in range(4):
                 if rem <= 1e-12:
                     break
                 dx = vx * step_dist * rem
                 dd = vd * step_dist * rem
                 tx = math.inf
-                if dx > 0 and x + dx > x_hi:
-                    tx = (x_hi - x) / dx
-                elif dx < 0 and x + dx < x_lo:
-                    tx = (x_lo - x) / dx
+                if dx > 0 and x + dx >= x_hi - 1e-12:
+                    tx = min(1.0, max(0.0, (x_hi - x) / dx))
+                elif dx < 0 and x + dx <= x_lo + 1e-12:
+                    tx = min(1.0, max(0.0, (x_lo - x) / dx))
                 td = math.inf
-                if dd > 0 and d + dd > d_hi:
-                    td = (d_hi - d) / dd
-                elif dd < 0 and d + dd < d_lo:
-                    td = (d_lo - d) / dd
+                if dd > 0 and d + dd >= d_hi - 1e-12:
+                    td = min(1.0, max(0.0, (d_hi - d) / dd))
+                elif dd < 0 and d + dd <= d_lo + 1e-12:
+                    td = min(1.0, max(0.0, (d_lo - d) / dd))
                 tmin = min(tx, td)
                 if tmin > 1.0:
                     x += dx

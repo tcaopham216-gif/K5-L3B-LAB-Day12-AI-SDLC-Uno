@@ -42,7 +42,7 @@ class Contract(unittest.TestCase):
             for key in ("oxygen_ticks", "hp", "oxygen_max_ticks", "hp_max", "at_surface"):
                 self.assertIn(key, s["player"])
             self.assertEqual(s["hold_capacity"], tuning_gather()["hold_capacity"])
-            self.assertEqual(len(s["fish"]), 6)
+            self.assertEqual(len(s["fish"]), tuning_gather()["fish_initial"])  # v1.1: 8 đàn cá ban đầu
             self.assertTrue(all(n["pos"][1] == 0 for n in s["nodes"]))
 
     def test_con_02_deterministic_bytes(self):
@@ -62,7 +62,7 @@ class Contract(unittest.TestCase):
             self.assertEqual(run_headless("--mode", "gather", "--seed", "1", "--ticks", "10", "--inputs", bad, "--out", out)[0], 2)
             self.assertFalse(os.path.exists(out), "lỗi đầu vào phải thoát TRƯỚC khi ghi đầu ra")
             self.assertEqual(run_headless("--mode", "gather", "--seed", "1", "--ticks", "-1", "--out", out)[0], 2)
-            for button in ("jump", "attack"):  # nút lạ / của phase sau
+            for button in ("jump",):  # nút lạ ngoài v1.1 (attack đã hợp lệ từ v1.1)
                 unk = write_json(w.path("unk.json"), frames({"tick": 0, button: True}))
                 self.assertEqual(run_headless("--mode", "gather", "--seed", "1", "--ticks", "10", "--inputs", unk, "--out", out)[0], 2, button)
             self.assertFalse(os.path.exists(out))
@@ -70,7 +70,7 @@ class Contract(unittest.TestCase):
     def test_con_03_old_and_future_modes_rejected(self):
         with Workdir() as w:
             out = w.path("o.jsonl")
-            for mode in ("river", "day"):
+            for mode in ("river",):  # chế độ lạ ngoài v1.1 (day đã hỗ trợ từ v1.1)
                 self.assertEqual(run_headless("--mode", mode, "--seed", "1", "--ticks", "0", "--out", out)[0], 2, mode)
             self.assertFalse(os.path.exists(out))
             old = write_json(w.path("old.json"), {"river": {"hold": []}})

@@ -176,6 +176,7 @@ class GatherRulesTests(unittest.TestCase):
             sc = write_json(w.path("sc.json"), {
                 "gather": {
                     "player": {"pos": [20, 5]},
+                    "random_fish": False,
                     "fish": [
                         {"id": "F10", "kind": "ca_loc", "pos": [22, 5]},
                         {"id": "F2", "kind": "ca_linh", "pos": [22, 5]},
@@ -224,6 +225,7 @@ class GatherRulesTests(unittest.TestCase):
                 "gather": {
                     "player": {"pos": [20, 5]},
                     "hold": ["bong_sung"] * 10,
+                    "random_fish": False,
                     "fish": [
                         {"id": "F1", "kind": "ca_linh", "pos": [20, 5]},
                         {"id": "F2", "kind": "ca_loc", "pos": [21, 5]},

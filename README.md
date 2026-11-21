@@ -3,22 +3,26 @@
 > **Làm theo nhóm 4–6 người** · Dùng AI để xây game 2D qua **4 phase** trong **3 giờ**: Út Sen lặn bắt cá, hái rau trên mặt nước rồi tối mở quán phục vụ khách.
 > **Yêu cầu từng phase mở đúng mốc giờ tại lab board:** **[Chợ Nổi Lab](https://claude.ai/artifact/E35v787wSx2wDgPTNhMVDg)** (cần đăng nhập claude.ai; có trợ giảng AI cho từng phase).
 
-## Nhóm Uno — Hướng dẫn nhanh Phase 1
+## Nhóm Uno — Hướng dẫn nhanh Phase 1 & Phase 2 (`v1.1`)
 
-- **Thành viên:** Cao Phạm Thành Đạt (`tcaopham216-gif`) — thực hiện solo toàn bộ 4 lát (`team_size: 1` trong [`game.contract.json`](game.contract.json), xem [`TEAM.md`](TEAM.md)).
+- **Thành viên:** Cao Phạm Thành Đạt (`tcaopham216-gif`) — thực hiện solo toàn bộ 4 lát (`team_size: 1` trong [`game.contract.json`](game.contract.json), xem [`TEAM.md`](TEAM.md)). Nhóm `< 5` người nên làm đầy đủ phần **Lõi** (không đăng ký mục Mở rộng).
 - **Chạy từ clone sạch (≤ 3 lệnh, macOS / Linux; Python 3.10+ chuẩn):**
   ```bash
   git clone https://github.com/tcaopham216-gif/K5-L3B-LAB-Day12-AI-SDLC-Uno.git && cd K5-L3B-LAB-Day12-AI-SDLC-Uno
-  python3 -m chonoi.live --mode gather --inventory-out kho.json   # buổi sáng; đổi sang --mode quan --inventory kho.json cho buổi tối
+  python3 -m chonoi.live --mode day   # chơi trọn vòng ngày D1–D5 (hoặc --mode gather / --mode quan để test lẻ)
   ```
 - **Chạy toàn bộ bộ test (1 lệnh):**
   ```bash
   PYTHONPATH=tests:. python3 -m unittest discover -s tests -v
   ```
   *(Trên Windows dùng `python`; để chạy test hộp đen gọi `python3` trong `game.contract.json`, đặt `python3.exe` trỏ tới Python 3 trong `PATH` và `$env:PYTHONPATH = "tests;."`.)*
-- **Điều khiển:** `WASD` / phím mũi tên để bơi hoặc đi lại · `E` để hái rau / cập bến (`gather`) hoặc nấu / bưng / phục vụ (`quan`) · `Space` để bắt cá dưới nước (`gather`) · `R` để chơi lại.
-- **Cách tính điểm:** $\text{score} = \text{earned} + 100 \times \lfloor \text{reputation} \rfloor$ (tiền tính bằng nghìn đồng: Cá lóc nướng trui `60k`, Gỏi bông súng `40k`, Lẩu cá linh bông điên điển `120k`; boa `20%` làm tròn xuống khi kiên nhẫn còn lại $\ge 50\%$ và cộng `0.2` uy tín; khách bỏ đi trừ `0.5` uy tín, kẹp trong `[0, 5]`).
-- **Hợp đồng file kho (`v1.0`, [`docs/contracts/README.md`](docs/contracts/README.md)):** JSON dạng `{"items": {<id>: <int >= 0>}}` (ví dụ [`docs/contracts/inventory.sample.json`](docs/contracts/inventory.sample.json)), ghi nguyên tử **một lần** khi có `gather_end` (ngất `fainted` ghi `{"items":{}}`; chạm `--ticks` không ghi). Kiểm tra thực tế: chạy `gather` → `kho.json` → `quan --inventory kho.json` ([bằng chứng](docs/proof/phase-1/smoke_quan.jsonl)).
+- **Điều khiển:** `WASD` / phím mũi tên để bơi hoặc đi lại · `E` để hái rau / cập bến / đóng Shop (`gather`/`shop`) hoặc nấu / bưng / phục vụ (`quan`) · `Space` để bắt cá dưới nước (`gather`) · `Esc` / `P` tạm dừng (kể cả trong Shop) · `1` / `2` mua nâng cấp Oxy / Áo phao trong Shop · `R` để chơi lại.
+- **Nội dung Phase 2 (`Test Contract v1.1`):**
+  - **6 nguyên liệu & 6 món (`menu`):** thêm `ca_keo`, `keo_neo`, 2 nút `N5..N6`, 2 bếp `B1..B2`, 4 bàn `T1..T4`, thêm 3 món `canh_chua_ca_loc` (`90k`), `ca_keo_nuong` (`70k`), `lau_mam` (`200k`).
+  - **Buổi sáng sống động:** 8 đàn cá ban đầu bơi `1.5 m/s`, đổi hướng tại bước bơi `120·k`, phản xạ mép/góc, sinh thêm tại `360·k` (trần `12`); thêm **Cá Sấu Năm Chèo** (`M1` từ Ngày 1, `M2` từ Ngày 3) tuần tra / truy đuổi / giật lùi `recoil` 60 bước, chạm mất 1 Máu + rơi `floor(n/2)` hàng theo LIFO + bất tử `90` tick.
+  - **Vòng ngày D1–D5 & Shop (`--mode day --days 1..5`):** `DayIntro → gather → EveningIntro → quan → DayResult → Shop`, khách chỉ gọi món nằm trong `day_plan` đủ nguyên liệu, mua nâng cấp **Bình oxy** (`200k`→45s, `400k`→60s) và **Áo phao** (`250k`→4 Máu, `500k`→5 Máu) có hiệu lực từ Ngày kế tiếp.
+- **Cách tính điểm:** $\text{score} = \text{earned} + 100 \times \lfloor \text{reputation} \rfloor$ (mua nâng cấp chỉ trừ `money`, giữ nguyên `earned` và `score`; boa `20%` làm tròn xuống khi kiên nhẫn còn $\ge 50\%$ và cộng `0.2` uy tín; khách bỏ đi trừ `0.5` uy tín, kẹp `[0, 5]`).
+- **Hợp đồng file kho (`v1.1`, [`docs/contracts/README.md`](docs/contracts/README.md)):** `{"items": {<id>: <int >= 0>}}`, chấp nhận đủ 6 nguyên liệu, tự bàn giao ở `--mode day` và vẫn hỗ trợ 2 tiến trình `--inventory-out` / `--inventory` ([bằng chứng Phase 2](docs/verification/phase-2.md)).
 
 ## Bắt buộc (chỉ có thế)
 

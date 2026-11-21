@@ -81,6 +81,8 @@ class Session:
 
     def step(self, inp) -> list:
         """Chạy một bước với `inp` (chonoi.inputs.InputState); xét pause trước gameplay."""
+        if self.sim.done:
+            return []
         self.phase_changed = False
         prev_phase = self.sim.phase
         prev_day = getattr(self.sim, "day", None)
