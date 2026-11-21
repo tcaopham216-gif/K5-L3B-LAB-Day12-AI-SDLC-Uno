@@ -8,7 +8,7 @@ import json
 import math
 
 from .errors import BadInput
-from .inventory import KINDS_P2, validate_items
+from .inventory import KINDS_P2, validate_item_list
 
 GATHER_KEYS = {"player", "hold", "nodes", "fish", "random_fish", "monsters", "time_left_ticks"}
 GATHER_PLAYER_KEYS = {"pos", "vel", "heading_deg", "hp", "oxygen_ticks", "zero_oxy_ticks",
@@ -231,9 +231,7 @@ def _validate_gather(b, tuning, oxy_max=None, hp_max=None):
     if "random_fish" in b and not isinstance(b["random_fish"], bool):
         raise BadInput("random_fish phải là boolean")
     if "hold" in b:
-        h = b["hold"]
-        if not isinstance(h, list) or any(k not in KINDS_P2 for k in h):
-            raise BadInput("hold phải là mảng id nguyên liệu hợp lệ")
+        h = validate_item_list(b["hold"], KINDS_P2)
         if len(h) > g["hold_capacity"]:
             raise BadInput("hold vượt sức chứa")
     p = b.get("player", {})
@@ -341,7 +339,7 @@ def _validate_quan(b, tuning):
         if not _num(rep) or not (q["reputation_min"] <= rep <= q["reputation_max"]):
             raise BadInput("reputation nằm ngoài khoảng hợp lệ")
     if "stock" in b:
-        validate_items(b["stock"])
+        validate_item_list(b["stock"], KINDS_P2)
     p = b.get("player", {})
     if not isinstance(p, dict) or set(p) - QUAN_PLAYER_KEYS:
         raise BadInput("quan.player chỉ có pos và vel")
@@ -446,12 +444,12 @@ def _validate_quan(b, tuning):
                 raise BadInput(f"customers.{cid}: khách waiting không được khai base_price/tip")
 
         if "reserved" in c:
-            res = validate_items(c["reserved"])
-            if ost == "reserved":
-                expected = {k: int(v) for k, v in menu[did]["recipe"].items() if v > 0}
-                if res != expected:
-                    raise BadInput(f"customers.{cid}: giữ chỗ {res} khác công thức {expected}")
-            elif res:
+            res = c["reserved"]
+            if (not isinstance(res, list)
+                    or any(not isinstance(iid, str) or not iid for iid in res)
+                    or len(set(res)) != len(res)):
+                raise BadInput(f"customers.{cid}: reserved phải là mảng id cá thể không trùng (v1.2)")
+            if ost != "reserved" and res:
                 raise BadInput(f"customers.{cid}: đơn {ost} phải có reserved rỗng")
 
     if len(table_ids) != len(set(table_ids)):

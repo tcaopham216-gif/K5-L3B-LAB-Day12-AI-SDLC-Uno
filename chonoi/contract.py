@@ -287,6 +287,16 @@ def _validate_day_plan_and_shop(dp, shop, g, menu):
             prev = val
 
 
+def _validate_freshness(f):
+    if not isinstance(f, dict) or not {"initial", "gather_decay_per_s", "quan_decay_per_s", "spoiled_below"} <= set(f):
+        raise BadInput("tuning.freshness phải có initial, gather_decay_per_s, quan_decay_per_s, spoiled_below")
+    _between("freshness.initial", f.get("initial"), 0.001, 100)
+    _between("freshness.gather_decay_per_s", f.get("gather_decay_per_s"), 0, 100)
+    _between("freshness.quan_decay_per_s", f.get("quan_decay_per_s"), 0, 100)
+    if not _num(f.get("spoiled_below")) or not (0 <= f["spoiled_below"] < f["initial"]):
+        raise BadInput(f"tuning.freshness.spoiled_below phải trong [0, {f['initial']})")
+
+
 def validate_tuning(t):
     if not isinstance(t, dict):
         raise BadInput("thiếu khối tuning")
@@ -297,3 +307,4 @@ def validate_tuning(t):
     _validate_gather(g)
     _validate_quan_and_menu(q, menu)
     _validate_day_plan_and_shop(dp, shop, g, menu)
+    _validate_freshness(t.get("freshness"))

@@ -1,37 +1,31 @@
-# Hợp đồng tích hợp — Phase 2 (Test Contract v1.1)
+# Hợp đồng tích hợp — Phase 3 (Test Contract v1.2)
 
-Cập nhật từ v1.0 tại kickoff Phase 2 cho đủ lõi 3 chế độ `gather`, `quan`, `day` (Shop, vòng ngày D1–D5, pause) trên cả headless và trình duyệt chơi thử.
+Cập nhật từ v1.1 theo Change Request **Mùa Nước Nổi**: thay kho đếm theo loại bằng **kho cá thể có độ tươi**. Nhóm `Uno` (`team_size: 1`) chỉ triển khai phần Lõi (`"extensions": []`).
 
-## 1. Schema file kho (`gather` → `quan`, mục G v1.0 & 4.1 v1.1)
+## 1. Schema file kho cá thể v1.2 (`gather` → `quan`)
 
-- Cấu trúc JSON duy nhất: `{"items": {<ingredient_id>: <int >= 0>}}` (kho rỗng: `{"items": {}}`).
-- Hợp lệ 6 loại nguyên liệu Phase 2 (`KINDS_P2`): `ca_loc`, `ca_linh`, `ca_keo`, `bong_dien_dien`, `bong_sung`, `keo_neo`.
-- Chế độ `gather` / `quan` độc lập vẫn dùng cờ `--inventory-out` / `--inventory`; chế độ `day` tự bàn giao trong bộ nhớ theo cùng schema đếm (ngất `fainted` vẫn mở quán với kho `{}`).
-- File kho mẫu hợp lệ: [`docs/contracts/inventory.sample.json`](inventory.sample.json) (`{"items":{"bong_sung":2,"ca_loc":1}}`).
+- Cấu trúc JSON duy nhất:
+  ```json
+  {"items":[{"id":"I1","kind":"ca_loc","fresh":100},{"id":"I2","kind":"bong_sung","fresh":97.5}]}
+  ```
+- Kho rỗng: `{"items":[]}`.
+- Ràng buộc từng cá thể: đúng 3 khóa `{"id", "kind", "fresh"}`; `id` chuỗi duy nhất khác rỗng; `kind` thuộc `KINDS_P2`; `fresh` hữu hạn trong `[0, 100]`.
+- **Từ chối v1.0/v1.1:** File kho đếm dạng `{"items":{"ca_loc":1}}` hoặc thiếu trường cá thể bị từ chối ngay với **mã thoát `2`** trước khi ghi output.
+- Bên ghi xuất theo `id_key(id)`, giữ nguyên mọi cá thể kể cả hàng ươn (`fresh < 30`) với đủ độ chính xác để giữ nhánh ngưỡng `30` khi đọc lại.
+- File kho mẫu v1.2: [`docs/contracts/inventory.sample.json`](inventory.sample.json).
 
-## 2. Giao diện chuyển pha & `sim/*` ↔ `client/ui`
+## 2. Quy tắc độ tươi, giữ chỗ & giá chốt (`tuning.freshness`)
 
-- **`GET /state`** (UI chỉ đọc snapshot + metadata):
-  - Chung: `tick`, `sim_tick`, `mode`, `phase` (`gather` | `quan` | `shop`), `phase_tick`, `state` (`playing` | `paused` | `finished`), `time_left_ticks`, `money`, `earned`, `reputation`, `score`, `meta`, `events`, `finished`, `reason`, `error`.
-  - Riêng `day`: `day` (`1..5`), `day_plan` (`{"dishes", "ingredients"}`), `upgrades` (đã mua), `active_upgrades` (đang hiệu lực trong Ngày).
-  - `gather`: thêm `player.invuln_ticks`, `fish[].age_ticks`, `monsters[]` (`id`, `kind`, `pos`, `waypoints`, `target_idx`, `state`, `state_ticks_left`, `recoil_dir`).
-  - `quan`: giữ v1.0 (`2` bếp `B1..B2`, `4` bàn `T1..T4`, `6` món menu; lọc theo `day_plan.dishes` khi ở `day`).
-  - `shop`: thêm `stock` dư từ `quan` và `time_left_ticks` (`600` tick tối đa).
-- **`POST /input`**: gửi `{"move": [x, y], "interact": bool, "catch": bool, "pause": bool, "shop_done": bool, "attack": bool, "photo": bool, "buy": "<str>"}` (`buy` chạy đúng 1 lần khi gửi).
-- **`POST /ui_pause`**: tạm dừng/tiếp tục vòng lặp trình duyệt cho các màn hình Menu / Intro / Tổng kết ngày.
-- **`POST /restart`**: đặt lại lượt chơi về tick 0.
+- Hằng số chuẩn: `initial: 100`, `gather_decay_per_s: 0.5` (`1/120`/tick), `quan_decay_per_s: 0.25` (`1/240`/tick), `spoiled_below: 30`. Hàng vừa hái/bắt có `fresh = 100` và hao từ **bước kế tiếp**. `pause` dừng hao; món đã nấu và kho dư ở `Shop` không hao; bàn giao `gather → quan` không hao thêm ở tick chuyển pha.
+- So ngưỡng `fresh < 30` trước làm tròn xuất JSONL. Khi cá thể đi từ `>= 30` xuống `< 30`, phát `spoiled` **đúng một lần** (sắp theo `id_key`). Hàng ươn vẫn chiếm chỗ trong giỏ/kho nhưng không dùng nấu.
+- **Giữ chỗ theo ID (`customers[].reserved`):** chọn các cá thể tươi nhất (`fresh >= 30`), hòa chọn `id_key` nhỏ hơn. Ở mỗi tick quán, hao toàn bộ kho và phát hết `spoiled` trước, rồi xử lý các đơn `waiting` + `reserved` có hàng vừa ươn theo `(order_tick, id bàn)`: nhả hết phần giữ của đơn và thử giữ lại một lần; thiếu → `order_status: "unfulfillable"`.
+- **Giá chốt theo tươi (`cook_started`):** tiêu đúng các ID đang giữ (mảng `items` sắp theo `kind` rồi `id_key`), tính:
+  $$\text{base\_price} = \left\lfloor \text{giá niêm yết} \times \frac{\text{trung bình fresh các cá thể}}{100} \right\rfloor$$
+  Boa khi `served` tính `floor(base_price * 0.2)` trên `base_price` đã chốt.
 
-## 3. Sự kiện chuẩn bổ sung (Contract v1.1)
+## 3. Khác biệt Schema Scenario / Snapshot / Event từ v1.2
 
-| Pha | Event `name` | `data` bắt buộc | Phát khi |
-|---|---|---|---|
-| Mọi pha | `day_start` | `{}` | Bắt đầu một Ngày mới (`tick: 0` D1 hoặc sau đóng Shop) |
-| Mọi pha | `day_plan` | `{"dishes", "ingredients"}` | Công bố thực đơn & nguyên liệu cần lấy đầu Ngày |
-| Mọi pha | `phase_start` | `{}` | Đổi sang pha `gather`, `quan` hoặc `shop` (`phase_tick: 0`) |
-| Mọi pha | `paused` / `resumed` | `{}` | Cạnh lên `pause` tắt/mở đóng băng `sim_tick`, `phase_tick` & timer |
-| `gather` | `monster_hit` | `{"monster_id", "hp", "lost", "pos"}` | Chạm Cá Sấu khi dưới `d >= 10` và hết bất tử (rơi LIFO `floor(len/2)`) |
-| `gather` | `fish_spawned` | `{"id", "kind", "pos"}` | Sinh đàn cá mới lúc `phase_tick = 360*k` nếu dưới trần `12` |
-| `gather` | `faint` | `{"cause": "choke"\|"monster", "lost", "hp": 0}` | Máu về `0` do ngạt hoặc chạm thủy quái |
-| `shop` | `bought` | `{"upgrade", "level", "price", "money"}` | Mua nâng cấp `oxygen`/`hp` thành công (áp dụng từ Ngày kế) |
-| `shop` | `buy_failed` | `{"action", "reason"}` | `funds` / `max_level` / `unknown` |
-| `shop` | `shop_end` | `{"reason": "done"\|"time"}` | Đóng Shop (tăng `days_completed` trước khi sang Ngày kế hoặc hết game) |
+- `gather.hold`, `quan.stock`, `shop.stock`, `gather_end.data.inventory.items`, `cook_started.data.items` và `lost` trong `monster_hit`/`faint`: mảng cá thể `{id, kind, fresh}` (riêng `hold` và `lost` theo thứ tự nhặt / LIFO; `stock` và `inventory` theo `id_key`; `cook_started.items` theo `kind` rồi `id_key`).
+- `customers[].reserved`: mảng ID cá thể `["I1", ...]`.
+- `IdAllocator("I")` cấp ID liên tục xuyên pha và Ngày (`I1, I2,...`); trong `day`, Ngày 1 giữ nguyên ID mẫu `gather.hold`, Ngày ≥ 2 cấp ID mới cho `gather.hold` mẫu.
+- Event mới **`spoiled`**: `{"item_id": "I1", "kind": "ca_linh", "location": "hold" | "stock"}`.
