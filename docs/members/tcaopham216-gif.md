@@ -1,0 +1,6 @@
+# tcaopham216-gif — phản tư cá nhân (≤ 200 từ)
+
+- **Tôi đã làm (kèm link commit):** Thực hiện toàn bộ Phase 1 cho nhóm `Uno` (solo): kickoff cấu hình & hợp đồng tích hợp (`66cfbec`), cài đặt `GatherSim` Lát 1–2 (`81afc2c`), cài đặt `QuanSim` Lát 3–4 + kiểm lỗi mâu thuẫn `scenario.py` + sửa HUD `chonoi/web/index.html` (`547f07b`), và hoàn thiện bộ test luật Phase 1, skill Harness AI, bằng chứng chạy thật & tài liệu xác minh ở commit kế tiếp.
+- **Tôi đã review (kèm link):** Tự rà soát từng lát đối chiếu trực tiếp PRD-0 và Test Contract v1.0 (mục A–G), kiểm chứng toàn bộ bằng `unittest` hộp đen trên `chonoi.headless` và `chonoi.live`.
+- **AI sai ở đâu và tôi phát hiện thế nào:** Ở starter UI (`chonoi/web/index.html`), `st.dish` được vẽ trực tiếp như chuỗi nên bị thành `[object Object]` khi nhận object `{order_id, dish_id, base_price}` theo Contract D; tôi phát hiện khi đối chiếu snapshot với template vẽ bếp và sửa lại kèm phần hiển thị `Kho khả dụng`. Trên Windows, lệnh `python3` trong `game.contract.json` gây lỗi tìm file khi test local nên tôi dùng shim ngoài repo mà không sửa `game.contract.json` của CI.
+- **Điều tôi học được:** Chốt hợp đồng tích hợp sớm (`docs/contracts/README.md`) và viết test biên chính xác (như ngạt ở `t+59`, boa ở `1800` vs `1799`, và thoát mã `2` trước khi ghi file) giúp khóa sạch lỗi trước khi chuyển phase.

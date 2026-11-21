@@ -3,6 +3,23 @@
 > **Làm theo nhóm 4–6 người** · Dùng AI để xây game 2D qua **4 phase** trong **3 giờ**: Út Sen lặn bắt cá, hái rau trên mặt nước rồi tối mở quán phục vụ khách.
 > **Yêu cầu từng phase mở đúng mốc giờ tại lab board:** **[Chợ Nổi Lab](https://claude.ai/artifact/E35v787wSx2wDgPTNhMVDg)** (cần đăng nhập claude.ai; có trợ giảng AI cho từng phase).
 
+## Nhóm Uno — Hướng dẫn nhanh Phase 1
+
+- **Thành viên:** Cao Phạm Thành Đạt (`tcaopham216-gif`) — thực hiện solo toàn bộ 4 lát (`team_size: 1` trong [`game.contract.json`](game.contract.json), xem [`TEAM.md`](TEAM.md)).
+- **Chạy từ clone sạch (≤ 3 lệnh, macOS / Linux; Python 3.10+ chuẩn):**
+  ```bash
+  git clone https://github.com/tcaopham216-gif/K5-L3B-LAB-Day12-AI-SDLC-Uno.git && cd K5-L3B-LAB-Day12-AI-SDLC-Uno
+  python3 -m chonoi.live --mode gather --inventory-out kho.json   # buổi sáng; đổi sang --mode quan --inventory kho.json cho buổi tối
+  ```
+- **Chạy toàn bộ bộ test (1 lệnh):**
+  ```bash
+  PYTHONPATH=tests:. python3 -m unittest discover -s tests -v
+  ```
+  *(Trên Windows dùng `python`; để chạy test hộp đen gọi `python3` trong `game.contract.json`, đặt `python3.exe` trỏ tới Python 3 trong `PATH` và `$env:PYTHONPATH = "tests;."`.)*
+- **Điều khiển:** `WASD` / phím mũi tên để bơi hoặc đi lại · `E` để hái rau / cập bến (`gather`) hoặc nấu / bưng / phục vụ (`quan`) · `Space` để bắt cá dưới nước (`gather`) · `R` để chơi lại.
+- **Cách tính điểm:** $\text{score} = \text{earned} + 100 \times \lfloor \text{reputation} \rfloor$ (tiền tính bằng nghìn đồng: Cá lóc nướng trui `60k`, Gỏi bông súng `40k`, Lẩu cá linh bông điên điển `120k`; boa `20%` làm tròn xuống khi kiên nhẫn còn lại $\ge 50\%$ và cộng `0.2` uy tín; khách bỏ đi trừ `0.5` uy tín, kẹp trong `[0, 5]`).
+- **Hợp đồng file kho (`v1.0`, [`docs/contracts/README.md`](docs/contracts/README.md)):** JSON dạng `{"items": {<id>: <int >= 0>}}` (ví dụ [`docs/contracts/inventory.sample.json`](docs/contracts/inventory.sample.json)), ghi nguyên tử **một lần** khi có `gather_end` (ngất `fainted` ghi `{"items":{}}`; chạm `--ticks` không ghi). Kiểm tra thực tế: chạy `gather` → `kho.json` → `quan --inventory kho.json` ([bằng chứng](docs/proof/phase-1/smoke_quan.jsonl)).
+
 ## Bắt buộc (chỉ có thế)
 
 Cách làm việc kỹ thuật là **tự do** (push thẳng, nhánh + PR, pair, có hay không CI…). Cái bắt buộc:
