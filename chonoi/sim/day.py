@@ -3,6 +3,8 @@
 import copy
 
 from ..errors import BadInput
+from ..ids import sort_by_id
+from ..inventory import serialize_item
 from .gather import GatherSim
 from .quan import QuanSim
 
@@ -54,7 +56,7 @@ class DaySim:
         self.reason = None
         self.phase = "gather"
         self.quan = None
-        self.shop_stock = {}
+        self.shop_stock = []
         self.shop_phase_tick = 0
         self.shop_time_left = 0
         self.gather = self._make_gather(self.day)
@@ -101,9 +103,15 @@ class DaySim:
                 raise BadInput(f"customers.{c['id']}: đơn assigned phải có đúng một món ở bếp hoặc tay")
 
     def _make_gather(self, day):
+        gtpl = copy.deepcopy(self.gather_tpl)
+        if day > 1 and "hold" in gtpl:
+            gtpl["hold"] = [
+                {"id": self.ids.new("I"), "kind": it["kind"], "fresh": it["fresh"]}
+                for it in gtpl["hold"]
+            ]
         return GatherSim(
             self.tuning,
-            copy.deepcopy(self.gather_tpl),
+            gtpl,
             self.rng,
             self.ids,
             day=day,
@@ -164,7 +172,7 @@ class DaySim:
         elif self.phase == "quan":
             base.update(self.quan.snapshot())
         else:
-            base["stock"] = {k: self.shop_stock[k] for k in sorted(self.shop_stock) if self.shop_stock[k] > 0}
+            base["stock"] = [serialize_item(it) for it in sort_by_id(self.shop_stock)]
         return base
 
     def step(self, inp) -> list:
@@ -176,7 +184,7 @@ class DaySim:
             evs = self.gather.step(inp)
             out = [(name, data, "gather", cur_day) for name, data in evs]
             if self.gather.done:
-                inv = self.gather.inventory_items()
+                inv = [dict(it) for it in sort_by_id(self.gather.hold)]
                 allowed = set(self.plans[cur_day]["dishes"].keys())
                 self.quan = QuanSim(
                     self.tuning,
@@ -202,7 +210,7 @@ class DaySim:
                 self._money = self.quan.money
                 self._earned = self.quan.earned
                 self._reputation = self.quan.reputation
-                self.shop_stock = {k: int(v) for k, v in sorted(self.quan.stock.items()) if v > 0}
+                self.shop_stock = [dict(it) for it in sort_by_id(list(self.quan.stock.values()))]
                 self.quan = None
                 self.phase = "shop"
                 self.shop_phase_tick = 0
@@ -250,7 +258,7 @@ class DaySim:
         if end_reason is not None:
             out.append(("shop_end", {"reason": end_reason}, "shop", cur_day))
             self.days_completed += 1
-            self.shop_stock = {}
+            self.shop_stock = []
             if self.days_completed >= self.target_days:
                 self.done = True
                 self.reason = "days_complete"

@@ -1,9 +1,12 @@
 """Ghi JSONL tất định: làm tròn 3 chữ số khi XUẤT (tính toán dùng giá trị chính xác)."""
 
+from fractions import Fraction
 import json
 
 
 def _clean(v):
+    if isinstance(v, Fraction):
+        v = int(v) if v.denominator == 1 else float(v)
     if isinstance(v, float):
         r = round(v, 3)
         return 0.0 if r == 0 else r  # tránh -0.0
