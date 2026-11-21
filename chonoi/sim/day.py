@@ -121,8 +121,11 @@ class DaySim:
             reputation=self.reputation,
         )
 
+    def _plan_key(self, day: int) -> int:
+        return ((int(day) - 1) % 5) + 1
+
     def _plan_payload(self, day):
-        pl = self.plans[day]
+        pl = self.plans[self._plan_key(day)]
         return {"dishes": dict(pl["dishes"]), "ingredients": dict(pl["ingredients"])}
 
     @property
@@ -185,7 +188,7 @@ class DaySim:
             out = [(name, data, "gather", cur_day) for name, data in evs]
             if self.gather.done:
                 inv = [dict(it) for it in sort_by_id(self.gather.hold)]
-                allowed = set(self.plans[cur_day]["dishes"].keys())
+                allowed = set(self.plans[self._plan_key(cur_day)]["dishes"].keys())
                 self.quan = QuanSim(
                     self.tuning,
                     copy.deepcopy(self.quan_tpl),

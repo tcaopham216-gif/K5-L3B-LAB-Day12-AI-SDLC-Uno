@@ -35,6 +35,11 @@ def load_contract(path=DEFAULT_PATH) -> dict:
         raise BadInput(f"không đọc được {path}: {e}")
     if "extensions" in c and (not isinstance(c["extensions"], list) or not all(isinstance(x, str) for x in c["extensions"])):
         raise BadInput("extensions phải là mảng chuỗi")
+    for cmd_key in ("bench_cmd", "soak_cmd"):
+        if cmd_key in c or c.get("contract_version") == "1.3":
+            val = c.get(cmd_key)
+            if not isinstance(val, str) or not val.strip():
+                raise BadInput(f"{cmd_key} phải là chuỗi lệnh khác rỗng")
     validate_tuning(c.get("tuning"))
     return c
 
