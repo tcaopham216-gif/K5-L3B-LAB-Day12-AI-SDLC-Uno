@@ -21,10 +21,14 @@ def _post_json(url, obj):
         return r.status, json.loads(r.read())
 
 
+def item(iid, kind, fresh=100):
+    return {"id": iid, "kind": kind, "fresh": fresh}
+
+
 class Phase2TuningAndSetupTests(unittest.TestCase):
     def test_v11_manifest_standard_values_and_gather_setup(self):
         c = load_contract()
-        self.assertEqual(c["contract_version"], "1.1")
+        self.assertIn(c["contract_version"], ("1.1", "1.2"))
         t = c["tuning"]
         g, q, m = t["gather"], t["quan"], t["menu"]
         self.assertEqual(len(g["nodes"]), 6)
@@ -72,7 +76,7 @@ class Phase2TuningAndSetupTests(unittest.TestCase):
             sc_g2 = write_json(w.path("sg2.json"), {
                 "gather": {
                     "player": {"pos": [76, 0]},
-                    "hold": ["ca_linh", "ca_linh", "bong_dien_dien"],
+                    "hold": [item("I1", "ca_linh"), item("I2", "ca_linh"), item("I3", "bong_dien_dien")],
                     "fish": [{"id": "F1", "kind": "ca_keo", "pos": [76, 2]}],
                     "random_fish": False,
                     "monsters": [],
@@ -84,7 +88,11 @@ class Phase2TuningAndSetupTests(unittest.TestCase):
             self.assertEqual(code, 0, err)
             with open(inv, encoding="utf-8") as f:
                 saved = json.load(f)
-            self.assertEqual(saved, {"items": {"bong_dien_dien": 1, "ca_keo": 2, "ca_linh": 2, "keo_neo": 1}})
+            self.assertEqual(len(saved["items"]), 6)
+            self.assertEqual([(x["id"], x["kind"]) for x in saved["items"]], [
+                ("I1", "ca_linh"), ("I2", "ca_linh"), ("I3", "bong_dien_dien"),
+                ("I4", "keo_neo"), ("I5", "ca_keo"), ("I6", "ca_keo"),
+            ])
 
             sc_q = write_json(w.path("sq.json"), {
                 "quan": {
@@ -107,8 +115,10 @@ class Phase2TuningAndSetupTests(unittest.TestCase):
             cs = events(rows, "cook_started")
             self.assertEqual(cs[0]["data"]["stove_id"], "B2")
             self.assertEqual(cs[0]["data"]["dish_id"], "lau_mam")
-            self.assertEqual(cs[0]["data"]["base_price"], 200)
-            self.assertEqual(snapshots(rows)[1]["stock"], {"ca_keo": 1})
+            # Giá chốt theo độ tươi < 100 sau 60 tick gather + 1 tick quán -> floor(200 * avg_fresh / 100) == 199
+            self.assertEqual(cs[0]["data"]["base_price"], 199)
+            self.assertEqual(len(snapshots(rows)[1]["stock"]), 1)
+            self.assertEqual(snapshots(rows)[1]["stock"][0]["kind"], "ca_keo")
 
 
 class FishSwimAndSpawnTests(unittest.TestCase):
@@ -221,7 +231,7 @@ class MonsterCaSauTests(unittest.TestCase):
             sc = write_json(w.path("sc.json"), {
                 "gather": {
                     "player": {"pos": [50, 20], "hp": 3},
-                    "hold": ["ca_loc", "bong_sung", "keo_neo"],  # 3 món -> mất floor(3/2)=1 (keo_neo)
+                    "hold": [item("I1", "ca_loc"), item("I2", "bong_sung"), item("I3", "keo_neo")],
                     "random_fish": False,
                     "monsters": [
                         {"id": "M10", "kind": "ca_sau", "pos": [50, 20], "waypoints": [[48, 20], [52, 20]]},
@@ -239,7 +249,7 @@ class MonsterCaSauTests(unittest.TestCase):
             self.assertEqual(len(hits), 1)
             self.assertEqual(hits[0]["tick"], 1)
             self.assertEqual(hits[0]["data"], {
-                "monster_id": "M2", "hp": 2, "lost": ["keo_neo"], "pos": [50.0, 20.0],
+                "monster_id": "M2", "hp": 2, "lost": [item("I3", "keo_neo", 99.992)], "pos": [50.0, 20.0],
             })
             snaps = {r["tick"]: r for r in snapshots(rows)}
             m2_t1 = next(m for m in snaps[1]["monsters"] if m["id"] == "M2")
@@ -255,7 +265,7 @@ class MonsterCaSauTests(unittest.TestCase):
             sc_f = write_json(w.path("sc_f.json"), {
                 "gather": {
                     "player": {"pos": [50, 20], "hp": 1},
-                    "hold": ["ca_loc", "bong_sung", "ca_linh"],
+                    "hold": [item("I1", "ca_loc"), item("I2", "bong_sung"), item("I3", "ca_linh")],
                     "random_fish": False,
                     "monsters": [
                         {"id": "M1", "kind": "ca_sau", "pos": [50, 20], "waypoints": [[50, 20], [52, 20]]},
@@ -269,15 +279,17 @@ class MonsterCaSauTests(unittest.TestCase):
             self.assertEqual(code, 0, err)
             rf = read_jsonl(out_f)
             self.assertEqual([e["name"] for e in events(rf)], ["monster_hit", "faint", "gather_end"])
-            self.assertEqual(events(rf, "monster_hit")[0]["data"]["lost"], ["ca_linh"])
+            self.assertEqual(events(rf, "monster_hit")[0]["data"]["lost"], [item("I3", "ca_linh", 99.992)])
             self.assertEqual(events(rf, "faint")[0]["data"], {
-                "cause": "monster", "lost": ["bong_sung", "ca_loc"], "hp": 0,
+                "cause": "monster",
+                "lost": [item("I2", "bong_sung", 99.992), item("I1", "ca_loc", 99.992)],
+                "hp": 0,
             })
             self.assertEqual(events(rf, "gather_end")[0]["data"], {
-                "reason": "fainted", "inventory": {"items": {}},
+                "reason": "fainted", "inventory": {"items": []},
             })
             with open(inv, encoding="utf-8") as f:
-                self.assertEqual(json.load(f), {"items": {}})
+                self.assertEqual(json.load(f), {"items": []})
 
 
 class PauseAndResumeTests(unittest.TestCase):
@@ -327,7 +339,7 @@ class DayModeAndShopTests(unittest.TestCase):
             # Ngày 1 plan chỉ có ca_loc_nuong_trui & goi_bong_sung; có sẵn ca_keo (nấu được ca_keo_nuong ngoài plan)
             # nhưng phải phát no_dish vì ngoài day_plan!
             sc = write_json(w.path("sc.json"), {
-                "gather": {"hold": ["ca_keo", "ca_keo"], "random_fish": False, "monsters": []},
+                "gather": {"hold": [item("I1", "ca_keo"), item("I2", "ca_keo")], "random_fish": False, "monsters": []},
                 "quan": {"time_left_ticks": 150},
             })
             inp = write_json(w.path("in.json"), frames({"tick": 0, "interact": True}))  # tick 1 docked -> mở quán
@@ -347,7 +359,7 @@ class DayModeAndShopTests(unittest.TestCase):
             sc_faint = write_json(w.path("sf.json"), {
                 "gather": {
                     "player": {"pos": [20, 10], "hp": 1, "oxygen_ticks": 0, "zero_oxy_ticks": 59},
-                    "hold": ["ca_loc"],
+                    "hold": [item("I1", "ca_loc")],
                     "random_fish": False,
                     "monsters": [],
                 },
@@ -361,7 +373,7 @@ class DayModeAndShopTests(unittest.TestCase):
             evs1 = [e["name"] for e in events(rf) if e["tick"] == 1]
             self.assertEqual(evs1, ["choke", "faint", "gather_end", "phase_start"])
             self.assertEqual(snapshots(rf)[1]["phase"], "quan")
-            self.assertEqual(snapshots(rf)[1]["stock"], {})
+            self.assertEqual(snapshots(rf)[1]["stock"], [])
 
     def test_shop_buy_failures_same_tick_close_timeout_and_multiday_upgrades(self):
         with Workdir() as w:
@@ -454,7 +466,7 @@ class Phase2Exit2AndLiveTests(unittest.TestCase):
                 ["--mode", "quan", "--days", "1"],
                 ["--mode", "day", "--days", "0"],
                 ["--mode", "day", "--days", "6"],
-                ["--mode", "day", "--inventory", write_json(w.path("i.json"), {"items": {}})],
+                ["--mode", "day", "--inventory", write_json(w.path("i.json"), {"items": []})],
                 ["--mode", "day", "--inventory-out", w.path("io.json")],
             ):
                 code, _ = run_headless(*args, "--seed", "1", "--ticks", "0", "--out", out)
@@ -465,7 +477,7 @@ class Phase2Exit2AndLiveTests(unittest.TestCase):
                 {"day": {"money": 100}},
                 {"day": {"money": 200, "earned": 100}},
                 {"day": {"day_plan": [{"day": 1, "dishes": {"ca_loc_nuong_trui": 2}, "ingredients": {"ca_loc": 1}}]}},
-                {"quan": {"stock": {}}},
+                {"quan": {"stock": []}},
                 {"quan": {"reputation": 4.0}},
                 {"quan": {"customers": [{"id": "C1", "table_id": "T1", "dish_id": "lau_mam"}]}},
                 {"gather": {"monsters": [{"id": "M1", "kind": "ca_sau", "pos": [60, 24], "waypoints": [[60, 24], [64, 24]], "state": "recoil", "state_ticks_left": 0, "recoil_dir": [1, 0]}]}},

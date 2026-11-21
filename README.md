@@ -3,7 +3,7 @@
 > **Làm theo nhóm 4–6 người** · Dùng AI để xây game 2D qua **4 phase** trong **3 giờ**: Út Sen lặn bắt cá, hái rau trên mặt nước rồi tối mở quán phục vụ khách.
 > **Yêu cầu từng phase mở đúng mốc giờ tại lab board:** **[Chợ Nổi Lab](https://claude.ai/artifact/E35v787wSx2wDgPTNhMVDg)** (cần đăng nhập claude.ai; có trợ giảng AI cho từng phase).
 
-## Nhóm Uno — Hướng dẫn nhanh Phase 1 & Phase 2 (`v1.1`)
+## Nhóm Uno — Hướng dẫn nhanh Phase 1 – Phase 3 (`v1.2`)
 
 - **Thành viên:** Cao Phạm Thành Đạt (`tcaopham216-gif`) — thực hiện solo toàn bộ 4 lát (`team_size: 1` trong [`game.contract.json`](game.contract.json), xem [`TEAM.md`](TEAM.md)). Nhóm `< 5` người nên làm đầy đủ phần **Lõi** (không đăng ký mục Mở rộng).
 - **Chạy từ clone sạch (≤ 3 lệnh, macOS / Linux; Python 3.10+ chuẩn):**
@@ -17,12 +17,12 @@
   ```
   *(Trên Windows dùng `python`; để chạy test hộp đen gọi `python3` trong `game.contract.json`, đặt `python3.exe` trỏ tới Python 3 trong `PATH` và `$env:PYTHONPATH = "tests;."`.)*
 - **Điều khiển:** `WASD` / phím mũi tên để bơi hoặc đi lại · `E` để hái rau / cập bến / đóng Shop (`gather`/`shop`) hoặc nấu / bưng / phục vụ (`quan`) · `Space` để bắt cá dưới nước (`gather`) · `Esc` / `P` tạm dừng (kể cả trong Shop) · `1` / `2` mua nâng cấp Oxy / Áo phao trong Shop · `R` để chơi lại.
-- **Nội dung Phase 2 (`Test Contract v1.1`):**
-  - **6 nguyên liệu & 6 món (`menu`):** thêm `ca_keo`, `keo_neo`, 2 nút `N5..N6`, 2 bếp `B1..B2`, 4 bàn `T1..T4`, thêm 3 món `canh_chua_ca_loc` (`90k`), `ca_keo_nuong` (`70k`), `lau_mam` (`200k`).
-  - **Buổi sáng sống động:** 8 đàn cá ban đầu bơi `1.5 m/s`, đổi hướng tại bước bơi `120·k`, phản xạ mép/góc, sinh thêm tại `360·k` (trần `12`); thêm **Cá Sấu Năm Chèo** (`M1` từ Ngày 1, `M2` từ Ngày 3) tuần tra / truy đuổi / giật lùi `recoil` 60 bước, chạm mất 1 Máu + rơi `floor(n/2)` hàng theo LIFO + bất tử `90` tick.
-  - **Vòng ngày D1–D5 & Shop (`--mode day --days 1..5`):** `DayIntro → gather → EveningIntro → quan → DayResult → Shop`, khách chỉ gọi món nằm trong `day_plan` đủ nguyên liệu, mua nâng cấp **Bình oxy** (`200k`→45s, `400k`→60s) và **Áo phao** (`250k`→4 Máu, `500k`→5 Máu) có hiệu lực từ Ngày kế tiếp.
-- **Cách tính điểm:** $\text{score} = \text{earned} + 100 \times \lfloor \text{reputation} \rfloor$ (mua nâng cấp chỉ trừ `money`, giữ nguyên `earned` và `score`; boa `20%` làm tròn xuống khi kiên nhẫn còn $\ge 50\%$ và cộng `0.2` uy tín; khách bỏ đi trừ `0.5` uy tín, kẹp `[0, 5]`).
-- **Hợp đồng file kho (`v1.1`, [`docs/contracts/README.md`](docs/contracts/README.md)):** `{"items": {<id>: <int >= 0>}}`, chấp nhận đủ 6 nguyên liệu, tự bàn giao ở `--mode day` và vẫn hỗ trợ 2 tiến trình `--inventory-out` / `--inventory` ([bằng chứng Phase 2](docs/verification/phase-2.md)).
+- **Nội dung Phase 3 (`Test Contract v1.2` — Mùa Nước Nổi, xem [`CHANGELOG.md`](CHANGELOG.md)):**
+  - **Kho cá thể & độ tươi:** chuyển sang `{"items": [{"id": "I1", "kind": "...", "fresh": 100}]}` (từ chối schema đếm cũ bằng mã `2`), cấp ID `I1, I2,...` liên tục; hàng mới bắt đầu tại `100`, hao `0.5/s` trong giỏ và `0.25/s` trong kho quán (`pause`, món chín & `Shop` không hao).
+  - **Hàng ươn & giữ chỗ theo ID:** cá thể đi từ `>= 30` xuống `< 30` phát `spoiled` một lần và không dùng nấu (vẫn chiếm chỗ giỏ); đơn bị ươn tự nhả và giữ lại một lần theo `(order_tick, id bàn)`, thiếu chuyển `unfulfillable`.
+  - **Chốt giá theo độ tươi:** khi bắt đầu nấu, `base_price = floor(giá niêm yết × trung bình fresh / 100)`; boa `20%` tính trên giá chốt (`earned + 100 * floor(reputation)`). HUD hiển thị thanh độ tươi từng ô giỏ, cảnh báo hàng ươn đỏ và kho tươi khả dụng.
+- **Tóm tắt Phase 2 (`v1.1`):** `6` nguyên liệu, `6` món, `N1..N6`, `B1..B2`, `T1..T4`, `8` đàn cá bơi/đổi hướng/phản xạ mép/sinh thêm, Cá Sấu `M1`/`M2` (`patrol`/`chase`/`recoil`/mất hàng LIFO), vòng `--mode day` D1–D5 & nâng cấp **Bình oxy** (`200k`→45s, `400k`→60s) / **Áo phao** (`250k`→4 Máu, `500k`→5 Máu).
+- **Hợp đồng & Kiểm chứng (`v1.2`):** xem [`docs/contracts/README.md`](docs/contracts/README.md), [`docs/adr/0001-freshness-item-instances.md`](docs/adr/0001-freshness-item-instances.md) và [`docs/verification/phase-3.md`](docs/verification/phase-3.md).
 
 ## Bắt buộc (chỉ có thế)
 

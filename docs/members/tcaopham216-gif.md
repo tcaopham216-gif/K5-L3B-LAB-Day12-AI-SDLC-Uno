@@ -1,9 +1,8 @@
 # tcaopham216-gif — phản tư cá nhân (≤ 200 từ)
 
-- **Tôi đã làm:** Thực hiện solo 4 lát qua Phase 1 (`66cfbec`, `81afc2c`, `547f07b`, `767b372`, tag `phase-1`) và Phase 2 (`3de57ef` Contract v1.1, `af0871a` cá bơi/sinh & Cá Sấu, `ec7a27b` `DaySim`/`Shop`/`pause`/UI `index.html`, và commit test + bằng chứng Phase 2).
-- **Tôi đã review:** Tự rà toàn bộ luật Contract v1.0 & v1.1 đối chiếu hộp đen qua `tests/test_smoke_p1.py`, `tests/test_phase1_rules.py` và `tests/test_phase2_rules.py` (`57/57` tests PASS).
+- **Tôi đã làm:** Thực hiện solo trọn 4 lát qua Phase 1 (`phase-1` tại `767b372`), Phase 2 (`phase-2` tại `74674ea`) và Phase 3 (`8acfb7d` ADR-0001 & adapter v1.2, `ff2c010` độ tươi/`spoiled`/giá chốt ở `GatherSim`·`QuanSim`·`DaySim`, `f843340` HUD độ tươi, và commit test + bằng chứng + `CHANGELOG.md`).
+- **Tôi đã review:** Tự rà toàn bộ breaking change `[THAY THẾ]` của Contract v1.2, đối chiếu 64/64 bài test tự động PASS (`55.725s`) và kiểm chứng thủ công bảng event/snapshot tại ngưỡng `fresh = 30`.
 - **AI sai ở đâu và tôi phát hiện thế nào:**
-  1. Starter HUD render `st.dish` thành `[object Object]` ở P1; phát hiện khi đối chiếu snapshot `quan`.
-  2. Trong `DaySim`, `money`/`reputation` ban đầu chỉ sync cuối ca quán -> sửa thành `@property` đọc thẳng từ `QuanSim` đang chạy.
-  3. Test biên chạm mép cá `[4.025, 6.0]` lật mặt lỗi float `tx = 1.0000000000000355 > 1.0` và Shop DOM gắn `snap.tick` -> kẹp `tx`/`td` về `[0.0, 1.0]` và chỉ cập nhật text timer `#shop-sec`.
-- **Điều học được:** Luôn viết test chạm đúng biên số thực và tách rõ vòng đời state chuyển pha ngay từ kế hoạch.
+  1. Ở P1–P2 đã phát hiện & khóa các lỗi UI (`st.dish`), `DaySim` sync tiền giữa ca và sai số float mép cá `1.0000000000000355`.
+  2. Ở P3 thiết kế ngay `Fraction` + khôi phục `1/240` nên sim vượt qua mọi ca biên file round-trip; chỉ phát hiện một typo test (`write_json` trả string) và một kỳ vọng thứ tự re-reserve ở `test_phase3_rules.py`.
+- **Điều học được:** Chốt `ADR` + thứ tự tích hợp (`adapter → sim → UI → migration test`) giúp đổi breaking schema lớn mà không làm gãy `main`.
