@@ -49,7 +49,7 @@ class LiveGame:
         self.error = None
         self.dish_sales = {}
         self._reset_day_stats(self.session.sim.reputation)
-        self.handoff_stock = {}
+        self.handoff_stock = []
 
     def _reset_day_stats(self, rep_start):
         self.day_stats = {
@@ -96,7 +96,7 @@ class LiveGame:
             if name == "day_start":
                 self._reset_day_stats(self.session.sim.reputation)
             elif name == "gather_end":
-                self.handoff_stock = dict(data.get("inventory", {}).get("items", {}))
+                self.handoff_stock = list(data.get("inventory", {}).get("items", []))
             elif name == "served":
                 self.day_stats["served_count"] += 1
                 did = data.get("dish_id")
@@ -135,6 +135,7 @@ class LiveGame:
             meta = dict(self.tuning.get(phase, {}))
             meta["menu"] = self.tuning["menu"]
             meta["shop"] = self.tuning["shop"]
+            meta["freshness"] = self.tuning["freshness"]
             meta["gather_cfg"] = {
                 "interact_radius": self.tuning["gather"]["interact_radius"],
                 "dock_pos": self.tuning["gather"]["dock_pos"],
@@ -153,7 +154,7 @@ class LiveGame:
             snap["ui_paused"] = self.ui_paused
             snap["ui_stats"] = {
                 "day": dict(self.day_stats),
-                "handoff_stock": dict(self.handoff_stock),
+                "handoff_stock": list(self.handoff_stock),
                 "dish_sales": dict(self.dish_sales),
             }
             return json.dumps(snap, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
