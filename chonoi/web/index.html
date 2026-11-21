@@ -226,8 +226,12 @@ function drawQuan(w, h) {
     const col = st.state === "cooking" ? "#e8892b" : st.state === "ready" ? "#6fbf5a" : "#6d6d72";
     ctx.fillStyle = col; ctx.fillRect(sx(st.pos[0]) - 0.8 * s, sy(st.pos[1]) - 0.8 * s, 1.6 * s, 1.6 * s);
     text(st.id, sx(st.pos[0]), sy(st.pos[1]) + 4, { size: 12, align: "center", color: "#111" });
-    if (st.dish) text(st.dish, sx(st.pos[0]), sy(st.pos[1]) - 0.95 * s, { size: 10, align: "center", color: "#2a1a0a" });
+    if (st.dish) {
+      const dishLabel = typeof st.dish === "string" ? st.dish : `${st.dish.dish_id} (${st.dish.order_id})`;
+      text(dishLabel, sx(st.pos[0]), sy(st.pos[1]) - 0.95 * s, { size: 10, align: "center", color: "#2a1a0a" });
+    }
     if (st.state === "cooking" && st.cook_ticks_left !== undefined) text(Math.ceil(st.cook_ticks_left / 60) + "s", sx(st.pos[0]), sy(st.pos[1]) + 1.25 * s, { size: 11, align: "center", color: "#2a1a0a" });
+    if (st.state === "ready") text("chín!", sx(st.pos[0]), sy(st.pos[1]) + 1.25 * s, { size: 11, align: "center", color: "#2a1a0a" });
   });
   // bàn + khách
   const patMax = (meta.patience_s || 60) * 60;
@@ -258,8 +262,14 @@ function drawQuan(w, h) {
   // HUD
   text("⏱ " + fmtTime(snap.time_left_ticks), 14, 28, { size: 20 });
   text(`Tiền ${snap.money ?? 0}k · uy tín ${(snap.reputation ?? 0).toFixed(1)} · điểm ${snap.score ?? 0}`, 110, 28, { size: 16 });
-  const stock = snap.stock ? Object.keys(snap.stock).map((k) => (KIND_NAME[k] || k) + "×" + snap.stock[k]).join(", ") : "";
-  text("Kho: " + (stock || "(trống)"), 14, 52, { size: 13, color: "#cfd8dc" });
+  const avail = Object.assign({}, snap.stock || {});
+  (snap.customers || []).forEach((c) => {
+    const res = c.reserved || {};
+    Object.keys(res).forEach((k) => { avail[k] = Math.max(0, (avail[k] || 0) - res[k]); });
+  });
+  const availText = Object.keys(avail).filter((k) => avail[k] > 0).map((k) => (KIND_NAME[k] || k) + "×" + avail[k]).join(", ");
+  const handText = snap.hand ? (typeof snap.hand === "string" ? snap.hand : `${snap.hand.dish_id} (${snap.hand.order_id})`) : "trống";
+  text("Kho khả dụng: " + (availText || "(trống)") + "  ·  Tay: " + handText, 14, 52, { size: 13, color: "#cfd8dc" });
   text("WASD/mũi tên đi · E tương tác (bếp / bàn) · R chơi lại", w - 10, h - 14, { size: 12, align: "right", color: "#9fb3c0" });
 }
 
